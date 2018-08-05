@@ -147,7 +147,7 @@ def get_sites(url, auth, scm, org):
                                   'longname', 'city', 'org_id', 'org_name'])
     site = [Site(scm, site['id'], site['name'], site['longname'],
                  site['city'], site['org'], org.name) for site in sites]
-    site.sort(key=lambda x: x.longname)
+    site.sort(key=lambda x: x.longname.casefold())
     return site
 
 
