@@ -3,7 +3,7 @@ Shows the status of all nodes in a SteelConnect Manager organisation. CSV import
 
 ## Getting Started
 USAGE:
-    steelconnect_node_status.py [-s scm.riverbed.cc] [-o organisation] [-u username] [-p password] [-f file]
+    steelconnect_node_status.py [-s realm] [-o organisation] [-u username] [-p password] [-f file]
 
 example.csv can be used as a template.
 
