@@ -24,6 +24,7 @@ import json
 import requests
 import sys
 import operator
+import re
 
 
 def main(argv):
@@ -49,9 +50,11 @@ def main(argv):
             time_after = time()
             time_taken = round((time_after-time_before)*1000, 2)
             # create objects for sites and nodes for retrieval later
+            realm_fw = get_realm_fw(baseurl_config, auth, scm)
             sites.extend(get_sites(baseurl_config, auth, scm, org))
             nodes.extend(get_nodes(baseurl_reporting, auth, scm, org))
-            print("Checking {} ({}ms)...".format(scm, time_taken))
+            print("Checking {}, version {} ({}ms)..."
+                  .format(scm, realm_fw, time_taken))
     else:  # no CSV file, specific realm specified
         scm = args.scm if args.scm else get_scm()
         org = args.organisation if args.organisation else get_organisation()
@@ -60,15 +63,22 @@ def main(argv):
         auth = (username, password)
         baseurl_reporting = 'https://' + scm + '/api/scm.reporting/1.0/'
         baseurl_config = 'https://' + scm + '/api/scm.config/1.0/'
+        time_before = time()
         org_id = find_org(baseurl_config, auth, org)
+        time_after = time()
+        time_taken = round((time_after-time_before)*1000, 2)
+        realm_fw = get_realm_fw(baseurl_config, auth, scm)
         sites = get_sites(baseurl_config, auth, scm, org_id)
         nodes = get_nodes(baseurl_reporting, auth, scm, org_id)
+        print("Checking {}, version {} ({}ms)..."
+              .format(scm, realm_fw, time_taken))
 
     # print layout for overview
-    print('*' * 132)
-    print(' {0:25} {1:15} {2:61} {3:10} {4:16}'
-          .format('SCM Realm', 'Organisation', 'Site', 'Model', 'Serial'))
-    print('*' * 132)
+    print('*' * 145)
+    print(' {0:25} {1:15} {2:61} {3:10} {4:12} {5:16}'
+          .format('SCM Realm', 'Organisation', 'Site',
+                  'Model', 'Firmware', 'Serial'))
+    print('*' * 145)
     # instead of showing the codenames, show the actual product names
     model = {
              'xirrusap': "Xirrus AP",
@@ -100,24 +110,26 @@ def main(argv):
             if node.serial:
                 if (node.site_id == site.site_id):
                     node_counter_total += 1
+                    # remove the codenames from the node's firmware version
+                    firmware_version = re.sub('-[a-z].*', '', node.fw_version)
                     # node = offline
                     if (node.state != "online"):
                         node_counter_offline += 1
                         # use red colour for offline nodes
                         print("\033[91m {0:25} {1:15} {2:61} "
-                              "{3:10} {4:16}\033[00m"
+                              "{3:10} {4:12} {5:16}\033[00m"
                               .format(node.scm, site.org_name, site.longname,
                                       str(model.get(node.model, "unknown")),
-                                      node.serial))
+                                      firmware_version, node.serial))
                     # else: node = online
                     else:
                         node_counter_online += 1
                         # use green colour for online nodes
                         print("\033[0;32m {0:25} {1:15} {2:61} "
-                              "{3:10} {4:16}\033[00m"
+                              "{3:10} {4:12} {5:16}\033[00m"
                               .format(node.scm, site.org_name, site.longname,
                                       str(model.get(node.model, "unknown")),
-                                      node.serial))
+                                      firmware_version, node.serial))
     # print total amount of nodes
     print("\nTotal: {} nodes ({} online, "
           "{} offline)\n".format(str(node_counter_total),
@@ -154,12 +166,20 @@ def get_sites(url, auth, scm, org):
 def get_nodes(url, auth, scm, org):
     """Get list of nodes for specified organisation."""
     nodes = get(url + 'org/' + org.id + '/nodes', auth=auth)
-    Node = collections.namedtuple('Node', ['scm', 'node_id',
-                                  'serial', 'state', 'model',
-                                            'site_id', 'org_id'])
+    Node = collections.namedtuple(
+        'Node', ['scm', 'node_id', 'serial', 'state', 'model',
+                 'site_id', 'org_id', 'fw_version'])
     node = [Node(scm, node['id'], node['serial'], node['state'],
-            node['model'], node['site'], node['org']) for node in nodes]
+            node['model'], node['site'], node['org'],
+            node['firmware_version'] or 'N/A') for node in nodes]
     return node
+
+
+def get_realm_fw(url, auth, scm):
+    """Get firmware for specified realm."""
+    status = get(url + 'status', auth=auth, single=True)
+    realm_fw = status['scm_version'] + '-' + status['scm_build']
+    return realm_fw
 
 
 def open_csv(file):
@@ -245,7 +265,7 @@ def get_password(username, password=None):
     return password
 
 
-def get(url, auth):
+def get(url, auth, single=False):
     """Return the items request from the SC REST API"""
     try:
         response = requests.get(url, auth=auth)
@@ -262,7 +282,10 @@ def get(url, auth):
         sys.exit(1)
     else:
         if response.status_code == 200:
-            return response.json()['items']
+            if single:
+                return response.json()
+            else:
+                return response.json()['items']
         else:
             print('=' * 79, file=sys.stderr)
             print('Access to SteelConnect Manager failed:', file=sys.stderr)
