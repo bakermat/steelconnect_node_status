@@ -177,8 +177,11 @@ def get_nodes(url, auth, scm, org):
 
 def get_realm_fw(url, auth, scm):
     """Get firmware for specified realm."""
-    status = get(url + 'status', auth=auth, single=True)
-    realm_fw = status['scm_version'] + '-' + status['scm_build']
+    try:
+        status = get(url + 'status', auth=auth, single=True)
+        realm_fw = status['scm_version'] + '-' + status['scm_build']
+    except Exception as e:
+        realm_fw = "< 2.9"
     return realm_fw
 
 
