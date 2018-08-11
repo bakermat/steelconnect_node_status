@@ -177,10 +177,10 @@ def get_nodes(url, auth, scm, org):
 
 def get_realm_fw(url, auth, scm):
     """Get firmware for specified realm."""
-    try:
-        status = get(url + 'status', auth=auth, single=True)
+    status = get(url + 'status', auth=auth, single=True)
+    if status:
         realm_fw = status['scm_version'] + '-' + status['scm_build']
-    except Exception as e:
+    else:
         realm_fw = "< 2.9"
     return realm_fw
 
@@ -189,10 +189,7 @@ def open_csv(file):
     """Import CSV file with auth details, sort on SCM"""
     try:
         with open(file, "rt") as f:
-            reader = csv.DictReader(f)
-            orgs = []
-            for row in reader:
-                orgs.append(row)
+            orgs = [row for row in csv.DictReader(f)]
             orgs = sorted(orgs, key=lambda d: (d['scm']))
     except IOError:
         print('Error: File {0} does not exist.'. format(file))
@@ -274,8 +271,11 @@ def get(url, auth, single=False):
         response = requests.get(url, auth=auth)
         response.raise_for_status()
     except requests.HTTPError as errh:
-        print('\nERROR:', errh)
-        sys.exit(1)
+        if single:
+            return None
+        else:
+            print('\nERROR:', errh)
+            sys.exit(1)
     except requests.ConnectionError as errc:
         print('\nERROR: Failed to connect to SCM, '
               'please check your credentials.')
