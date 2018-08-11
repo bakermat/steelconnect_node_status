@@ -81,24 +81,29 @@ def main(argv):
     print('*' * 145)
     # instead of showing the codenames, show the actual product names
     model = {
-             'xirrusap': "Xirrus AP",
-             'raccoon': "SDI-AP3",
-             'koala': "SDI-AP5",
-             'aardvark': "SDI-S12",
-             'sloth': "SDI-S24",
-             'kodiak': "SDI-S48",
-             'yogi': "SDI-VGW",
-             'booboo': "SDI-AWS",
-             'paddington': "SDI-AZURE",
-             'panda': "SDI-130",
-             'ewok': "SDI-330",
-             'grizzly': "SDI-1030",
-             'cx570': "570-SD",
-             'cx770': "770-SD",
-             'cx3070': "3070-SD",
-             'tiger1g': "SDI-2030",
-             'panther': "SDI-5030"
-             }
+        'aardvark': 'SDI-S12',
+        'baloo': 'SDI-SH',
+        'beorn': 'SDI-ZAKSH',
+        'booboo': 'SDI-AWS',
+        'cx3070': '3070-SD',
+        'cx570': '570-SD',
+        'cx770': '770-SD',
+        'ewok': 'SDI-330',
+        'fozzy': 'SDI-USB',
+        'grizzly': 'SDI-1030',
+        'koala': 'SDI-AP5',
+        'kodiak': 'SDI-S48',
+        'misha': 'SDI-AZURE-SH',
+        'paddington': 'SDI-AZURE',
+        'panda': 'SDI-130',
+        'panther': 'SDI-5030',
+        'raccoon': 'SDI-AP3',
+        'sloth': 'SDI-S24',
+        'tiger1g': 'SDI-2030',
+        'ursus': 'SDI-AP5r',
+        'xirrusap': 'Xirrus AP',
+        'yogi': 'SDI-VGW'
+    }
 
     node_counter_total = 0
     node_counter_offline = 0
