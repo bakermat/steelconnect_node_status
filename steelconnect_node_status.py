@@ -70,40 +70,41 @@ def main(argv):
         realm_fw = get_realm_fw(baseurl_config, auth, scm)
         sites = get_sites(baseurl_config, auth, scm, org_id)
         nodes = get_nodes(baseurl_reporting, auth, scm, org_id)
-        print("Checking {}, version {} ({}ms)..."
-              .format(scm, realm_fw, time_taken))
 
-    # print layout for overview
-    print('*' * 145)
-    print(' {0:25} {1:15} {2:61} {3:10} {4:12} {5:16}'
-          .format('SCM Realm', 'Organisation', 'Site',
-                  'Model', 'Firmware', 'Serial'))
-    print('*' * 145)
-    # instead of showing the codenames, show the actual product names
+        if not args.csv:
+            print("Checking {}, version {} ({}ms)..."
+                  .format(scm, realm_fw, time_taken))
+
+    if args.csv:
+        # This produces the CSV output
+        print('SCM Realm,Organisation,Site,Model,State,Firmware,Serial')
+    else:
+        # print layout for overview
+        print('*' * 155)
+        print(' {0:25} {1:15} {2:61} {3:10} {4:10} {5:12} {6:16}'
+              .format('SCM Realm', 'Organisation', 'Site',
+                      'Model', 'State', 'Firmware', 'Serial'))
+        print('*' * 155)
+        # instead of showing the codenames, show the actual product names
     model = {
-        'aardvark': 'SDI-S12',
-        'baloo': 'SDI-SH',
-        'beorn': 'SDI-ZAKSH',
-        'booboo': 'SDI-AWS',
-        'cx3070': '3070-SD',
-        'cx570': '570-SD',
-        'cx770': '770-SD',
-        'ewok': 'SDI-330',
-        'fozzy': 'SDI-USB',
-        'grizzly': 'SDI-1030',
-        'koala': 'SDI-AP5',
-        'kodiak': 'SDI-S48',
-        'misha': 'SDI-AZURE-SH',
-        'paddington': 'SDI-AZURE',
-        'panda': 'SDI-130',
-        'panther': 'SDI-5030',
-        'raccoon': 'SDI-AP3',
-        'sloth': 'SDI-S24',
-        'tiger1g': 'SDI-2030',
-        'ursus': 'SDI-AP5r',
-        'xirrusap': 'Xirrus AP',
-        'yogi': 'SDI-VGW'
-    }
+             'xirrusap': "Xirrus AP",
+             'raccoon': "SDI-AP3",
+             'koala': "SDI-AP5",
+             'aardvark': "SDI-S12",
+             'sloth': "SDI-S24",
+             'kodiak': "SDI-S48",
+             'yogi': "SDI-VGW",
+             'booboo': "SDI-AWS",
+             'paddington': "SDI-AZURE",
+             'panda': "SDI-130",
+             'ewok': "SDI-330",
+             'grizzly': "SDI-1030",
+             'cx570': "570-SD",
+             'cx770': "770-SD",
+             'cx3070': "3070-SD",
+             'tiger1g': "SDI-2030",
+             'panther': "SDI-5030"
+             }
 
     node_counter_total = 0
     node_counter_offline = 0
@@ -117,29 +118,33 @@ def main(argv):
                     node_counter_total += 1
                     # remove the codenames from the node's firmware version
                     firmware_version = re.sub('-[a-z].*', '', node.fw_version)
-                    # node = offline
-                    if (node.state != "online"):
-                        node_counter_offline += 1
-                        # use red colour for offline nodes
-                        print("\033[91m {0:25} {1:15} {2:61} "
-                              "{3:10} {4:12} {5:16}\033[00m"
-                              .format(node.scm, site.org_name, site.longname,
-                                      str(model.get(node.model, "unknown")),
-                                      firmware_version, node.serial))
-                    # else: node = online
+                    if args.csv:
+                        print(node.scm+','+site.org_name+','+site.longname+','+str(model.get(node.model, "unknown"))+','+node.state+','+firmware_version+','+node.serial)
                     else:
-                        node_counter_online += 1
-                        # use green colour for online nodes
-                        print("\033[0;32m {0:25} {1:15} {2:61} "
-                              "{3:10} {4:12} {5:16}\033[00m"
-                              .format(node.scm, site.org_name, site.longname,
-                                      str(model.get(node.model, "unknown")),
-                                      firmware_version, node.serial))
-    # print total amount of nodes
-    print("\nTotal: {} nodes ({} online, "
-          "{} offline)\n".format(str(node_counter_total),
-                                 str(node_counter_online),
-                                 str(node_counter_offline)))
+                        # node = offline
+                        if (node.state != "online"):
+                            node_counter_offline += 1
+                            # use red colour for offline nodes
+                            print("\033[91m {0:25} {1:15} {2:61} "
+                                  "{3:10} {4:10} {5:12} {6:16}\033[00m"
+                                  .format(node.scm, site.org_name, site.longname,
+                                          str(model.get(node.model, "unknown")),node.state,
+                                          firmware_version, node.serial))
+                        # else: node = online
+                        else:
+                            node_counter_online += 1
+                            # use green colour for online nodes
+                            print("\033[0;32m {0:25} {1:15} {2:61} "
+                                  "{3:10} {4:10} {5:12} {6:16}\033[00m"
+                                  .format(node.scm, site.org_name, site.longname,
+                                          str(model.get(node.model, "unknown")),node.state,
+                                          firmware_version, node.serial))
+    if not args.csv:
+        # print total amount of nodes
+        print("\nTotal: {} nodes ({} online, "
+              "{} offline)\n".format(str(node_counter_total),
+                                     str(node_counter_online),
+                                     str(node_counter_offline)))
 
 
 def find_org(url, auth, organisation):
@@ -182,10 +187,10 @@ def get_nodes(url, auth, scm, org):
 
 def get_realm_fw(url, auth, scm):
     """Get firmware for specified realm."""
-    status = get(url + 'status', auth=auth, single=True)
-    if status:
+    try:
+        status = get(url + 'status', auth=auth, single=True)
         realm_fw = status['scm_version'] + '-' + status['scm_build']
-    else:
+    except Exception as e:
         realm_fw = "< 2.9"
     return realm_fw
 
@@ -194,7 +199,10 @@ def open_csv(file):
     """Import CSV file with auth details, sort on SCM"""
     try:
         with open(file, "rt") as f:
-            orgs = [row for row in csv.DictReader(f)]
+            reader = csv.DictReader(f)
+            orgs = []
+            for row in reader:
+                orgs.append(row)
             orgs = sorted(orgs, key=lambda d: (d['scm']))
     except IOError:
         print('Error: File {0} does not exist.'. format(file))
@@ -234,6 +242,13 @@ def arguments(argv):
         '-f',
         '--file',
         help='CSV file to import',
+    )
+    parser.add_argument(
+        '-c',
+        '--csv',
+        dest='csv',
+        action='store_true',
+        help='Output comma-delimited values',
     )
     return parser.parse_args()
 
@@ -276,11 +291,8 @@ def get(url, auth, single=False):
         response = requests.get(url, auth=auth)
         response.raise_for_status()
     except requests.HTTPError as errh:
-        if single:
-            return None
-        else:
-            print('\nERROR:', errh)
-            sys.exit(1)
+        print('\nERROR:', errh)
+        sys.exit(1)
     except requests.ConnectionError as errc:
         print('\nERROR: Failed to connect to SCM, '
               'please check your credentials.')
