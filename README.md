@@ -19,7 +19,7 @@ CSV input file needs the following headers:
     scm,site,username,password
 
 ### Release notes:
-2019-01-25: v1.1 - added -c option for CSV output and added state field explicitly
+2019-01-25: v1.1 - added -c option for CSV output and added state field explicitly  
 2018-08-11: v1.0 - initial release
 
 ## Acknowledgments
